@@ -1,5 +1,11 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 import requests
+import smtplib
+from email.message import EmailMessage
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 
@@ -15,8 +21,32 @@ def home():
 def about():
     return render_template("about.html")
 
-@app.route('/contact')
+@app.route('/contact', methods=["GET", "POST"])
 def contact():
+    if request.method=="POST":
+        # Email details
+        email_sender = 'henrique.ribeiroduarte@gmail.com'
+        email_password = os.getenv("MAIL_PW")
+        email_receiver = ['henrique.ribeiroduarte@gmail.com']
+        port = 587
+
+        subject = "New contact request"
+        content = request.form["body"]
+        final_content = content + '\n\n' + request.form["name"] + '\n' + request.form["email"] + '\n' + request.form[
+            "phone"]
+
+        msg = EmailMessage()
+        msg['Subject'] = subject
+        msg['From'] = email_sender
+        msg['To'] = email_receiver
+        msg.set_content(final_content)
+
+        with smtplib.SMTP('smtp.gmail.com', port=port) as connection:
+            connection.starttls()
+            connection.login(user=email_sender, password=email_password)
+            connection.send_message(msg=msg)
+            print('Email sent successfully.')
+
     return render_template("contact.html")
 
 @app.route('/posts/<id>')
